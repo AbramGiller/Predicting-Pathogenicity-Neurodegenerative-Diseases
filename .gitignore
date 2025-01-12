@@ -1,0 +1,15 @@
+# Ignore processed CSV files
+/data/processed/*.csv
+
+# Ignore raw VCF files
+/data/raw/*.vcf
+/data/raw/*.vcf.gz
+
+# Optional: Ignore other large or unnecessary files
+*.log
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.env
+.ipynb_checkpoints/
