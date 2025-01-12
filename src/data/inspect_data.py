@@ -1,19 +1,22 @@
 import pandas as pd
 
-# Load the dataset
-data = pd.read_csv('/Users/s2222119/Predicting-Pathogenicity-Neurodegenerative-Diseases/data/processed/clinvar_parsed.csv')
+# Load the cleaned dataset
+data = pd.read_csv('/Users/s2222119/Predicting-Pathogenicity-Neurodegenerative-Diseases/data/processed/clinvar_parsed_with_genes.csv')
 
-# Convert Chromosome to string
-data['Chromosome'] = data['Chromosome'].astype(str)
+# Define encoding for Clinical_Significance
+clinical_significance_mapping = {
+    'Likely_benign': 0,
+    'Uncertain_significance': 1,
+    'Pathogenic': 2
+}
 
-# Print unique Chromosome values to confirm conversion
-print("Unique Chromosome values:", data['Chromosome'].unique())
+# Map Clinical_Significance to numeric values
+data['Clinical_Significance_Encoded'] = data['Clinical_Significance'].map(clinical_significance_mapping)
 
-# Optimize Clinical_Significance as a category
-data['Clinical_Significance'] = data['Clinical_Significance'].astype('category')
+# Drop rows with unmapped categories (if any)
+data = data.dropna(subset=['Clinical_Significance_Encoded'])
 
-# Save the cleaned dataset
-data.to_csv('/Users/s2222119/Predicting-Pathogenicity-Neurodegenerative-Diseases/data/processed/clinvar_parsed_cleaned.csv', index=False)
+# Save the updated dataset
+data.to_csv('/Users/s2222119/Predicting-Pathogenicity-Neurodegenerative-Diseases/data/processed/clinvar_encoded.csv', index=False)
 
-print("Data types after cleaning:")
-print(data.dtypes)
+print("Clinical_Significance encoded. Updated data saved to data/processed/clinvar_encoded.csv")
