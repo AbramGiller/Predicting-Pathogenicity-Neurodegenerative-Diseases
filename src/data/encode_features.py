@@ -1,18 +1,56 @@
+# src/data/encode_features.py
+
 import pandas as pd
+import numpy as np
+import config
 
-# Load the dataset
-data = pd.read_csv('/Users/s2222119/Predicting-Pathogenicity-Neurodegenerative-Diseases/data/processed/clinvar_encoded.csv')
+def map_clnsig(raw_label):
+    """
+    Given a raw CLNSIG string which might contain multiple labels, return a single label.
+    Priority: Pathogenic > Likely_pathogenic > Benign > ...
+    Adjust as desired.
+    """
+    # Split multi-label by ';'
+    labels = raw_label.split(';') if raw_label != 'NotProvided' else ['Uncertain_significance']
+    labels = [l.strip() for l in labels]
 
-# Perform one-hot encoding on the 'Chromosome' column
-chromosome_encoded = pd.get_dummies(data['Chromosome'], prefix='Chromosome')
+    # Example priority logic
+    if any("pathogenic" in l.lower() for l in labels):
+        return 2  # Pathogenic
+    if any("benign" in l.lower() for l in labels):
+        return 0  # Benign
+    # fallback
+    return 1  # uncertain or conflicting
 
-# Merge the encoded columns back into the dataset
-data = pd.concat([data, chromosome_encoded], axis=1)
+def encode_clinical_significance(df):
+    df['Clinical_Significance_Encoded'] = df['Clinical_Significance'].apply(map_clnsig)
+    # Drop original if you don’t need it
+    df.drop(columns=['Clinical_Significance'], inplace=True)
+    return df
 
-# Optionally, drop the original 'Chromosome' column
-data = data.drop(columns=['Chromosome'])
+def handle_missing_values(df):
+    # If you prefer a numeric median fill, first pick numeric columns:
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].median())
 
-# Save the updated dataset
-data.to_csv('/Users/s2222119/Predicting-Pathogenicity-Neurodegenerative-Diseases/data/processed/clinvar_chromosome_encoded.csv', index=False)
+    # For object columns, you might fill with 'NotProvided' or some placeholder
+    obj_cols = df.select_dtypes(include=[object]).columns
+    df[obj_cols] = df[obj_cols].fillna('NotProvided')
 
-print("Chromosome column encoded. Updated data saved to data/processed/clinvar_chromosome_encoded.csv")
+    return df
+
+def main():
+    df = pd.read_csv(config.STAGE1_PARSED)
+    
+    # Encode clinical significance
+    df = encode_clinical_significance(df)
+    
+    # Handle missing values
+    df = handle_missing_values(df)
+
+    # Save interim dataset
+    df.to_csv(config.STAGE2_ENCODED, index=False)
+    print(f"Feature-encoded dataset saved to {config.STAGE2_ENCODED}")
+
+if __name__ == "__main__":
+    main()
